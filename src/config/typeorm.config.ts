@@ -17,5 +17,5 @@ export class TypeOrmConfig implements TypeOrmOptionsFactory {
       entities: [__dirname + '/../**/*.entity{.ts,.js}'],
       synchronize: this.configService.get('NODE_ENV') === 'development',
     };
-  };
-};
+  }
+}
