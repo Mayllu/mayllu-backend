@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: .  # El contexto es el directorio actual, que contiene tu Dockerfile
+      dockerfile: Dockerfile  # Dockerfile que usará para construir la imagen
+    env_file:
+      - .env  # Cargar las variables de entorno desde el archivo .env
+    ports:
+      - "${PORT}:${PORT}"  # Puerto configurado en el archivo .env
+    depends_on:
+      - db  # Asegura que el servicio de base de datos esté arriba antes del backend
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+    volumes:
+      - .:/backend  # Monta el código fuente local en el contenedor
+    command: npm run start:dev  # Comando para iniciar el backend en modo de desarrollo (con hot reload)
+
+  db:
+    image: postgres:15  # Usar la imagen oficial de PostgreSQL
+    env_file:
+      - .env  # Cargar las variables de entorno desde el archivo .env para configurar PostgreSQL
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # Volumen para persistencia de datos de la base de datos
+volumes:
+  pgdata:

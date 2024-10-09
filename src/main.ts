@@ -7,7 +7,7 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 300;
+  const port = process.env.PORT || 3000;
   const config = new DocumentBuilder().setTitle('Mayllu API').setDescription('API for Mayllu').setVersion('1.0').build();
 
   app.setGlobalPrefix('api');

@@ -5,7 +5,6 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { TypeOrmConfig } from './config/';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { ComplaintsController } from './complaints/complaints.controller';
 import { ComplaintsModule } from './complaints/complaints.module';
 
 @Module({
