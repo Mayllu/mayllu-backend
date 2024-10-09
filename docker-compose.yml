@@ -16,6 +16,7 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT}
     volumes:
       - .:/backend  # Monta el código fuente local en el contenedor
+      - /backend/node_modules # Monta node_modules como un volumen separado
     command: npm run start:dev  # Comando para iniciar el backend en modo de desarrollo (con hot reload)
 
   db:
