@@ -35,6 +35,3 @@ jobs:
         with:
           eslint: true
           prettier: true
-          files: |
-            "src/**/*.ts"        # Archivos TS en el directorio src
-            "test/**/*.ts"       # Archivos TS en el directorio de pruebas
