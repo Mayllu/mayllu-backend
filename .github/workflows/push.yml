@@ -1,0 +1,36 @@
+name: Build and Push Backend Docker Image
+
+on:
+  push:
+    branches:
+      - main  # Cambia 'main' por tu rama de desarrollo o producción según necesites
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: lenin.chavez  # Usa tu nombre de usuario de Docker Hub
+          password: password  # Usa tu contraseña de Docker Hub
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: lenin.chavez/backend:${{ github.sha }}  # Cambia 'lenin.chavez/backend' por tu nombre de repositorio de Docker Hub
+
+      - name: Clean up Buildx
+        uses: docker/build-push-action@v3
+        with:
+          cleanup: true
