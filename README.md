@@ -1,9 +1,8 @@
 <img src="https://github.com/Mayllu/.github/raw/main/profile/images/mayllu.png"></img>
 
-
 # 🚀 NestJS Backend For Mayllu
 
-Bienvenido al proyecto de backend creado con **NestJS**. Este proyecto proporciona una base sólida y escalable para construir aplicaciones web modernas y eficientes.
+Bienvenido al proyecto de backend para Mayllu creado con **NestJS**. Este proyecto proporciona una base sólida y escalable para construir aplicaciones web modernas y eficientes.
 
 ## 🛠️ Tecnologías Usadas
 
@@ -30,7 +29,6 @@ Sigue estos pasos para configurar el proyecto en tu máquina local:
    ```
 4. **Configura el archivo `.env`:**
    Copia el archivo `.env.example` a `.env` y ajusta las variables según tu configuración.
-   
 5. **Inicia el servidor:**
    ```bash
    npm run start:dev
