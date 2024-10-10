@@ -38,4 +38,3 @@ jobs:
           files: |
             "src/**/*.ts"        # Archivos TS en el directorio src
             "test/**/*.ts"       # Archivos TS en el directorio de pruebas
-        args: --ignore-pattern 'node_modules/*' --ignore-pattern 'dist/*'
