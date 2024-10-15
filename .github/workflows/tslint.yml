@@ -21,7 +21,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node
+        uses: actions/setup-node@v2
         with:
           node-version: 18
 
@@ -31,7 +31,7 @@ jobs:
 
       # Ejecuta ESLint y Prettier para analizar los archivos .js en el directorio src
       - name: Run linters
-        uses: wearerequired/lint-action@v2
+        uses: wearerequired/lint-action@v3
         with:
           eslint: true
           prettier: true
