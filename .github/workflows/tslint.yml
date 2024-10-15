@@ -41,7 +41,7 @@ jobs:
 
       # Paso 5: Ejecuta ESLint para verificar los archivos .ts y .js
       - name: Run ESLint
-        run: npx eslint '**/*.{js,ts}' --ext .js,.ts
+        run: npx eslint
 
       # Paso 6: Ejecuta Prettier para verificar la formateación del código
       - name: Run Prettier
