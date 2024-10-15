@@ -3,9 +3,9 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { TypeOrmConfig } from './config/';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
 import { ComplaintsModule } from './complaints/complaints.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -14,10 +14,10 @@ import { ComplaintsModule } from './complaints/complaints.module';
       imports: [ConfigModule],
       useClass: TypeOrmConfig,
     }),
-    // add modules here :)
+    AuthModule,
     ComplaintsModule,
+    UsersModule,
+    // add modules here :)
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}

@@ -1,22 +1,28 @@
 import { Injectable } from '@nestjs/common';
-import { Complaint } from '../interfaces/complaint.interface';
+import { CreateComplaintDto } from './dto/create-complaint.dto';
+import { UpdateComplaintDto } from './dto/update-complaint.dto';
 
 @Injectable()
 export class ComplaintsService {
-  private readonly complaints: Complaint[] = [];
-  create(complaint: Complaint) {
-    this.complaints.push(complaint);
+  create(createComplaintDto: CreateComplaintDto) {
+    console.log(createComplaintDto);
+    return 'This action adds a new complaint';
   }
-  findAll(): Complaint[] {
-    return this.complaints;
+
+  findAll() {
+    return `This action returns all complaints`;
   }
-  findOne(id: number): Complaint {
-    return this.complaints[id];
+
+  findOne(id: number) {
+    return `This action returns a #${id} complaint`;
   }
-  update(id: number, complaint: Complaint) {
-    this.complaints[id] = complaint;
+
+  update(id: number, updateComplaintDto: UpdateComplaintDto) {
+    console.log(updateComplaintDto);
+    return `This action updates a #${id} complaint`;
   }
+
   remove(id: number) {
-    this.complaints.splice(id, 1);
+    return `This action removes a #${id} complaint`;
   }
 }

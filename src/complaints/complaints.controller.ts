@@ -1,30 +1,34 @@
-import { Controller, Get, Post, Put, Delete, Param, Body } from '@nestjs/common';
-import { CreateComplaintDto, UpdateComplaintDto } from '../dto/complaint.dto';
+import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
 import { ComplaintsService } from './complaints.service';
-import { Complaint } from 'src/interfaces/complaint.interface';
+import { CreateComplaintDto } from './dto/create-complaint.dto';
+import { UpdateComplaintDto } from './dto/update-complaint.dto';
 
 @Controller('complaints')
 export class ComplaintsController {
-  constructor(private complaintsService: ComplaintsService) {}
+  constructor(private readonly complaintsService: ComplaintsService) {}
+
   @Post()
-  async create(@Body() createComplaintDto: CreateComplaintDto) {
-    this.complaintsService.create(createComplaintDto);
+  create(@Body() createComplaintDto: CreateComplaintDto) {
+    return this.complaintsService.create(createComplaintDto);
   }
+
   @Get()
-  async findAll(): Promise<Complaint[]> {
+  findAll() {
     return this.complaintsService.findAll();
   }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.complaintsService.findOne(+id);
   }
-  @Put(':id')
+
+  @Patch(':id')
   update(@Param('id') id: string, @Body() updateComplaintDto: UpdateComplaintDto) {
-    return `This action updates a #${id} complaint with data: ${JSON.stringify(updateComplaintDto)}`;
+    return this.complaintsService.update(+id, updateComplaintDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    this.complaintsService.remove(+id);
+    return this.complaintsService.remove(+id);
   }
 }
