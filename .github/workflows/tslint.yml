@@ -17,25 +17,36 @@ jobs:
       checks: write
 
     steps:
+      # Paso 1: Check out Git repository
       - name: Check out Git repository
         uses: actions/checkout@v4
 
+      # Paso 2: Set up Node.js con la versión deseada
       - name: Set up Node.js
         uses: actions/setup-node@v2
         with:
           node-version: 18
 
-      # Instala las dependencias de Node.js desde package.json
+      # Paso 3: Instala las dependencias de Node.js desde package.json
       - name: Install Node.js dependencies
         run: npm ci
 
-      # Verifica la existencia del tsconfig.json (si estás usando TypeScript)
+      # Paso 4: Verifica la existencia de tsconfig.json (importante para TypeScript y ESLint)
       - name: Ensure tsconfig.json exists
-        run: test -f tsconfig.json || echo "tsconfig.json not found"
+        run: |
+          if [ ! -f tsconfig.json ]; then
+            echo "❌ Error: tsconfig.json not found!";
+            exit 1;
+          fi
 
-      # Ejecuta ESLint y Prettier para verificar los archivos
+      # Paso 5: Ejecuta ESLint y Prettier para verificar los archivos .ts y .js
       - name: Run linters
         uses: wearerequired/lint-action@v1
         with:
           eslint: true
           prettier: true
+        env:
+          ESLINT_CONFIG_PATH: .eslintrc.js  # Opcional: Ruta al archivo de configuración ESLint
+        # Aquí especificamos que ESLint debe trabajar sobre archivos .ts y .js
+        run: |
+          npx eslint '**/*.{js,ts}' --ext .js,.ts
