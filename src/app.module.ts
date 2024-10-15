@@ -6,6 +6,7 @@ import { TypeOrmConfig } from './config/';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ComplaintsModule } from './complaints/complaints.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -14,10 +15,9 @@ import { ComplaintsModule } from './complaints/complaints.module';
       imports: [ConfigModule],
       useClass: TypeOrmConfig,
     }),
+    AuthModule,
     // add modules here :)
     ComplaintsModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
 export class AppModule {}
