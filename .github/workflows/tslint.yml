@@ -31,7 +31,7 @@ jobs:
 
       # Ejecuta ESLint y Prettier para analizar los archivos .js en el directorio src
       - name: Run linters
-        uses: wearerequired/lint-action@v3
+        uses: wearerequired/lint-action@v1
         with:
           eslint: true
           prettier: true
