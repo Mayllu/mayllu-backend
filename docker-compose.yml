@@ -1,33 +1,35 @@
 services:
   backend:
     build:
-      context: .  # El contexto es el directorio actual, que contiene tu Dockerfile
-      dockerfile: Dockerfile  # Dockerfile que usará para construir la imagen
+      context: . # El contexto es el directorio actual, que contiene tu Dockerfile
+      dockerfile: Dockerfile # Dockerfile que usará para construir la imagen
     env_file:
-      - .env  # Cargar las variables de entorno desde el archivo .env
+      - .env # Cargar las variables de entorno desde el archivo .env
     ports:
-      - "${PORT}:${PORT}"  # Puerto configurado en el archivo .env
+      - '${PORT}:${PORT}' # Puerto configurado en el archivo .env
     depends_on:
-      - db  # Asegura que el servicio de base de datos esté arriba antes del backend
+      - db # Asegura que el servicio de base de datos esté arriba antes del backend
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_PORT: ${POSTGRES_PORT}
     volumes:
-      - .:/backend  # Monta el código fuente local en el contenedor
+      - .:/backend # Monta el código fuente local en el contenedor
       - /backend/node_modules # Monta node_modules como un volumen separado
-    command: npm run start:dev  # Comando para iniciar el backend en modo de desarrollo (con hot reload)
+    command: npm run start:dev # Comando para iniciar el backend en modo de desarrollo (con hot reload)
 
   db:
-    image: postgres:15  # Usar la imagen oficial de PostgreSQL
+    image: postgres:15 # Usar la imagen oficial de PostgreSQL
     env_file:
-      - .env  # Cargar las variables de entorno desde el archivo .env para configurar PostgreSQL
+      - .env # Cargar las variables de entorno desde el archivo .env para configurar PostgreSQL
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - '${POSTGRES_EXPOSE_PORT}:${POSTGRES_PORT}'
     volumes:
-      - pgdata:/var/lib/postgresql/data  # Volumen para persistencia de datos de la base de datos
+      - pgdata:/var/lib/postgresql/data # Volumen para persistencia de datos de la base de datos
 volumes:
   pgdata:
