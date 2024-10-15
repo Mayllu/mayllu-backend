@@ -13,8 +13,8 @@ jobs:
     name: Run linters
     runs-on: ubuntu-latest
     permissions:
-      contents: read  # Permisos para leer el contenido del repositorio
-      checks: write    # Permisos para crear y actualizar checks
+      contents: read
+      checks: write
 
     steps:
       - name: Check out Git repository
@@ -25,11 +25,15 @@ jobs:
         with:
           node-version: 18
 
-      # Instala las dependencias desde package.json, incluyendo @expo-google-fonts/plus-jakarta-sans
+      # Instala las dependencias de Node.js desde package.json
       - name: Install Node.js dependencies
         run: npm ci
 
-      # Ejecuta ESLint y Prettier para analizar los archivos .js en el directorio src
+      # Verifica la existencia del tsconfig.json (si estás usando TypeScript)
+      - name: Ensure tsconfig.json exists
+        run: test -f tsconfig.json || echo "tsconfig.json not found"
+
+      # Ejecuta ESLint y Prettier para verificar los archivos
       - name: Run linters
         uses: wearerequired/lint-action@v1
         with:
