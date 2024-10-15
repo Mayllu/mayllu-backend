@@ -39,14 +39,10 @@ jobs:
             exit 1;
           fi
 
-      # Paso 5: Ejecuta ESLint y Prettier para verificar los archivos .ts y .js
-      - name: Run linters
-        uses: wearerequired/lint-action@v1
-        with:
-          eslint: true
-          prettier: true
-        env:
-          ESLINT_CONFIG_PATH: .eslintrc.js  # Opcional: Ruta al archivo de configuración ESLint
-        # Aquí especificamos que ESLint debe trabajar sobre archivos .ts y .js
-        run: |
-          npx eslint '**/*.{js,ts}' --ext .js,.ts
+      # Paso 5: Ejecuta ESLint para verificar los archivos .ts y .js
+      - name: Run ESLint
+        run: npx eslint '**/*.{js,ts}' --ext .js,.ts
+
+      # Paso 6: Ejecuta Prettier para verificar la formateación del código
+      - name: Run Prettier
+        run: npx prettier --check "**/*.{js,ts,json,md}"
