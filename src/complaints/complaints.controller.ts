@@ -31,7 +31,7 @@ export class ComplaintsController {
   @Get(':id')
   async findOne(@Param('id') id: string) {
     try {
-      const complaint = await this.complaintsService.findOneComplaint(+id);
+      const complaint = await this.complaintsService.findOneComplaint(id.toString());
       if (!complaint) {
         throw new NotFoundException(`Complaint with ID ${id} not found`);
       }
@@ -57,7 +57,7 @@ export class ComplaintsController {
   @Patch(':id')
   async update(@Param('id') id: string, @Body() updateComplaintDto: UpdateComplaintDto) {
     try {
-      const updatedComplaint = await this.complaintsService.update(+id, updateComplaintDto);
+      const updatedComplaint = await this.complaintsService.update(id.toString(), updateComplaintDto);
       if (!updatedComplaint) {
         throw new NotFoundException(`Complaint with ID ${id} not found`);
       }
@@ -70,7 +70,7 @@ export class ComplaintsController {
   @Delete(':id')
   async remove(@Param('id') id: string) {
     try {
-      await this.complaintsService.remove(+id);
+      await this.complaintsService.remove(id.toString());
       return { message: `Complaint with ID ${id} has been deleted` };
     } catch (error) {
       throw new NotFoundException(error.message);

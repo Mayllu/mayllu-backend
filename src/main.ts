@@ -1,16 +1,19 @@
+import helmet from 'helmet';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import helmet from 'helmet';
-
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port = process.env.PORT || 3000;
-  const config = new DocumentBuilder().setTitle('Mayllu API').setDescription('API for Mayllu').setVersion('1.0').build();
+  const port = process.env.MAYLLU_BACKEND_PORT || 3000;
+  const config = new DocumentBuilder()
+  .setTitle('Mayllu API')
+  .setDescription('API for Mayllu')
+  .setVersion('1.0').build();
 
   app.setGlobalPrefix('api');
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true, // remove non allowed fields (dto)
@@ -18,12 +21,14 @@ async function bootstrap() {
       transform: true, // transform payload to dto
     }),
   );
+
   app.enableCors({
     origin: ['*'],
     preflightContinue: false,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   });
+
   app.use(
     helmet({
       contentSecurityPolicy: false,

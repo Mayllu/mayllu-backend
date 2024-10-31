@@ -1,9 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { JwtService } from '@nestjs/jwt';
 import { Repository } from 'typeorm';
 import { CreateAuthDto } from './dto/create-auth.dto';
 import { User } from 'src/model/user.entity';
-import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class AuthService {
@@ -20,9 +20,11 @@ export class AuthService {
         password: createAuthDto.password,
       },
     });
+
     if (!existingUser) {
       throw new UnauthorizedException('No existe el usuario.');
     }
+
     const payload = {
       dni: existingUser.dni,
       name: existingUser.name,

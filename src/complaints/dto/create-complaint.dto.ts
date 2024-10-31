@@ -13,7 +13,6 @@ export class CreateComplaintDto {
   @IsString()
   description: string;
 
-  // Usando coordenadas separadas para latitud y longitud
   @IsNotEmpty()
   @IsLatitude()
   latitude: number;
@@ -23,8 +22,8 @@ export class CreateComplaintDto {
   longitude: number;
 
   @IsNotEmpty()
-  @IsNumber()
-  categoryId: number;
+  @IsString() // Cambiado de IsNumber a IsString para MongoDB ObjectId
+  categoryId: string;
 
   @IsNotEmpty()
   @IsDateString()

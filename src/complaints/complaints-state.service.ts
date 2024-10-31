@@ -1,25 +1,45 @@
+// complaints-state.service.ts
 import { Injectable } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { ComplaintState } from 'src/model/complaint_state.entity';
-import { Complaint } from 'src/model/complaint.entity';
-import { User } from 'src/model/user.entity';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { ComplaintState, ComplaintStateDocument } from './schemas/complaint_state.schema';
+import { Complaint, ComplaintDocument } from './schemas/complaint.schema';
+import { User } from '../users/schemas/user.schema';
 
 @Injectable()
 export class ComplaintStateService {
   constructor(
-    @InjectRepository(ComplaintState)
-    private readonly complaintStateRepository: Repository<ComplaintState>,
+    @InjectModel(ComplaintState.name)
+    private readonly complaintStateModel: Model<ComplaintStateDocument>,
   ) {}
 
-  // Crear un estado inicial para una queja
-  async createInitialState(complaint: Complaint, user: User): Promise<ComplaintState> {
-    const complaintState = this.complaintStateRepository.create({
-      complaint_id: complaint.id,
-      user_id: user.dni,
-      state: 'PENDING', // Estado inicial predeterminado
+  async createInitialState(complaint: ComplaintDocument, user: User): Promise<ComplaintStateDocument> {
+    const complaintState = new this.complaintStateModel({
+      complaint: complaint._id,
+      user: user.dni,
+      state: 'PENDING',
+      created_at: new Date()
     });
 
-    return this.complaintStateRepository.save(complaintState);
+    return await complaintState.save();
+  }
+
+  async findByComplaint(complaintId: string): Promise<ComplaintStateDocument[]> {
+    return this.complaintStateModel
+      .find({ complaint: new Types.ObjectId(complaintId) })
+      .populate('complaint')
+      .populate('user')
+      .exec();
+  }
+
+  async updateState(complaintId: string, newState: string, user: User): Promise<ComplaintStateDocument> {
+    const complaintState = new this.complaintStateModel({
+      complaint: new Types.ObjectId(complaintId),
+      user: user.dni,
+      state: newState,
+      created_at: new Date()
+    });
+
+    return await complaintState.save();
   }
 }

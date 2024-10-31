@@ -1,23 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-
-import { TypeOrmConfig } from './config/';
-import { AuthModule } from './auth/auth.module';
+import { MongooseModule } from '@nestjs/mongoose';
 import { ComplaintsModule } from './complaints/complaints.module';
-import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useClass: TypeOrmConfig,
+    ConfigModule.forRoot({
+      isGlobal: true,
+      ignoreEnvFile: false,
     }),
-    AuthModule,
+    MongooseModule.forRoot(process.env.MAYLLU_MONGO_URI),
     ComplaintsModule,
-    UsersModule,
-    // add modules here :)
   ],
 })
 export class AppModule {}

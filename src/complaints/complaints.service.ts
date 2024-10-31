@@ -1,128 +1,101 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model, Types } from 'mongoose';
+import { Complaint, ComplaintDocument } from './schemas/complaint.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { ComplaintCategory, ComplaintCategoryDocument } from './schemas/complaint_category.schema';
 import { CreateComplaintDto } from './dto/create-complaint.dto';
 import { UpdateComplaintDto } from './dto/update-complaint.dto';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Complaint } from 'src/model/complaint.entity';
-import { Repository } from 'typeorm';
-import { User } from 'src/model/user.entity';
-import { ComplaintCategory } from 'src/model/complaint_category.entity';
 import { GeolocationService } from './geolocation.service';
+import { ComplaintStateService } from './complaints-state.service';
+
 @Injectable()
 export class ComplaintsService {
   constructor(
-    @InjectRepository(Complaint)
-    private readonly complaintRepository: Repository<Complaint>,
-    @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
-    @InjectRepository(ComplaintCategory)
-    private readonly categoryRepository: Repository<ComplaintCategory>,
+    @InjectModel(Complaint.name) private readonly complaintModel: Model<ComplaintDocument>,
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+    @InjectModel(ComplaintCategory.name) private readonly categoryModel: Model<ComplaintCategoryDocument>,
     private readonly geolocationService: GeolocationService,
+    private readonly complaintStateService: ComplaintStateService,
   ) {}
 
   async findAllComplaints() {
-    return await this.complaintRepository.find({
-      relations: [
-        'user', // Incluye la relación con el usuario
-        'category', // Incluye la relación con la categoría de quejas
-        'district', // Incluye la relación con el distrito
-        'complaints_image', // Incluye las imágenes de la queja
-        'comments', // Incluye los comentarios
-        'complaintState', // Incluye el estado de la queja
-      ],
-    });
+    return await this.complaintModel
+      .find()
+      .populate('user')
+      .populate('category')
+      .populate('district')
+      .exec();
   }
 
-  async findAllComplaintsFromUser(dni: string): Promise<Complaint[]> {
-    return await this.complaintRepository.find({
-      relations: [
-        'user', // Incluye la relación con el usuario
-        'category', // Incluye la relación con la categoría de quejas
-        'district', // Incluye la relación con el distrito
-        'complaints_image', // Incluye las imágenes de la queja
-        'comments', // Incluye los comentarios
-        'complaintState', // Incluye el estado de la queja
-      ],
-      where: { user: { dni } },
-    });
+  async findAllComplaintsFromUser(dni: string): Promise<ComplaintDocument[]> {
+    return await this.complaintModel
+      .find({ user: dni })
+      .populate('user')
+      .populate('category')
+      .populate('district')
+      .exec();
   }
 
-  async create(createComplaintDto: CreateComplaintDto): Promise<Complaint> {
-    // Convertir latitude y longitude a un string tipo "point" para la base de datos
-    createComplaintDto.created_at = new Date(createComplaintDto.created_at);
-    createComplaintDto.updated_at = new Date(createComplaintDto.updated_at);
+  async create(createComplaintDto: CreateComplaintDto): Promise<ComplaintDocument> {
     const { latitude, longitude, userId, categoryId } = createComplaintDto;
     const formattedUbication = `(${latitude}, ${longitude})`;
 
-    const user = await this.userRepository.findOne({ where: { dni: userId } });
+    const user = await this.userModel.findOne({ dni: userId }).exec();
     if (!user) {
       throw new Error(`User with ID ${userId} not found`);
     }
 
-    const category = await this.categoryRepository.findOne({ where: { id: categoryId } });
+    const category = await this.categoryModel.findById(categoryId).exec();
     if (!category) {
       throw new Error(`Category with ID ${categoryId} not found`);
     }
 
     const district = await this.geolocationService.findOrCreateDistrict(latitude, longitude);
     if (!district) {
-      throw new Error(`District with ID ${district} not found`);
+      throw new Error(`District not found`);
     }
 
-    // Crear la entidad con las relaciones utilizando objetos parciales
-    const complaint = this.complaintRepository.create({
-      user: user,
+    const complaint = new this.complaintModel({
+      user: user.dni,
       ubication: formattedUbication,
-      category: category,
-      district: district,
+      category: new Types.ObjectId(categoryId),
+      district: district._id,
       title: createComplaintDto.title,
       description: createComplaintDto.description,
-      created_at: createComplaintDto.created_at,
-      updated_at: createComplaintDto.updated_at,
+      created_at: new Date(createComplaintDto.created_at),
+      updated_at: new Date(createComplaintDto.updated_at),
     });
 
-    const savedComplaint = await this.complaintRepository.save(complaint);
+    const savedComplaint = await complaint.save();
 
-    // Crear el estado inicial en ComplaintState
-    // await this.complaintStateService.createInitialState(savedComplaint, user);
+    // Crear el estado inicial
+    await this.complaintStateService.createInitialState(savedComplaint, user);
 
     return savedComplaint;
   }
 
-  async update(id: number, updateComplaintDto: UpdateComplaintDto): Promise<Complaint> {
-    // Busca la queja existente por su ID
-    const complaint = await this.complaintRepository.findOne({ where: { id } });
-    if (!complaint) {
-      throw new Error(`Complaint with ID ${id} not found`);
+  async update(id: string, updateComplaintDto: UpdateComplaintDto): Promise<ComplaintDocument> {
+    const { latitude, longitude, categoryId, description } = updateComplaintDto;
+    const updateData: any = {};
+
+    if (latitude && longitude) {
+      updateData.ubication = `(${latitude}, ${longitude})`;
     }
 
-    // Extrae la información del DTO
-    const { latitude, longitude, categoryId } = updateComplaintDto;
-
-    // Si hay coordenadas nuevas, conviértalas a formato "point"
-    if (latitude !== undefined && longitude !== undefined) {
-      complaint.ubication = `(${latitude}, ${longitude})`;
+    if (categoryId) {
+      updateData.category = new Types.ObjectId(categoryId);
     }
 
-    // Actualiza solo las propiedades que están presentes en el DTO
-
-    if (categoryId !== undefined) {
-      // Crear el objeto completo solo si 'categoryId' está definido
-      complaint.category = { id: categoryId } as ComplaintCategory;
+    if (description) {
+      updateData.description = description;
     }
 
-    if (updateComplaintDto.description !== undefined) {
-      complaint.description = updateComplaintDto.description;
-    }
+    updateData.updated_at = new Date();
 
-    // Actualiza la fecha de modificación
-    complaint.updated_at = new Date();
-
-    // Guarda la queja actualizada en la base de datos
-    return this.complaintRepository.save(complaint);
-  }
-
-  async findOneComplaint(id: number): Promise<Complaint> {
-    const complaint = await this.complaintRepository.findOne({ where: { id } });
+    const complaint = await this.complaintModel
+      .findByIdAndUpdate(id, updateData, { new: true })
+      .exec();
 
     if (!complaint) {
       throw new Error(`Complaint with ID ${id} not found`);
@@ -131,13 +104,35 @@ export class ComplaintsService {
     return complaint;
   }
 
-  async remove(id: number): Promise<void> {
-    const complaint = await this.complaintRepository.findOne({ where: { id } });
+  async findOneComplaint(id: string): Promise<ComplaintDocument> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new Error('Invalid complaint ID');
+    }
+
+    const complaint = await this.complaintModel
+      .findById(id)
+      .populate('user')
+      .populate('category')
+      .populate('district')
+      .exec();
 
     if (!complaint) {
       throw new Error(`Complaint with ID ${id} not found`);
     }
 
-    await this.complaintRepository.remove(complaint);
+    return complaint;
+  }
+
+  async remove(id: string): Promise<void> {
+    if (!Types.ObjectId.isValid(id)) {
+      throw new Error('Invalid complaint ID');
+    }
+
+    const complaint = await this.complaintModel.findById(id).exec();
+    if (!complaint) {
+      throw new Error(`Complaint with ID ${id} not found`);
+    }
+
+    await complaint.deleteOne();
   }
 }
