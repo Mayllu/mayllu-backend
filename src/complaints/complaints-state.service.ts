@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { ComplaintState, ComplaintStateDocument } from './schemas/complaint_state.schema';
-import { Complaint, ComplaintDocument } from './schemas/complaint.schema';
+import { ComplaintDocument } from './schemas/complaint.schema';
 import { User } from '../users/schemas/user.schema';
 
 @Injectable()
@@ -18,7 +18,7 @@ export class ComplaintStateService {
       complaint: complaint._id,
       user: user.dni,
       state: 'PENDING',
-      created_at: new Date()
+      created_at: new Date(),
     });
 
     return await complaintState.save();
@@ -37,7 +37,7 @@ export class ComplaintStateService {
       complaint: new Types.ObjectId(complaintId),
       user: user.dni,
       state: newState,
-      created_at: new Date()
+      created_at: new Date(),
     });
 
     return await complaintState.save();

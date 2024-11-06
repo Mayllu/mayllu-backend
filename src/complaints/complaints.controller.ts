@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, NotFoundException, HttpStatus, HttpException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, NotFoundException, HttpStatus, HttpException, UseInterceptors, UploadedFile, ParseFilePipe, MaxFileSizeValidator, FileTypeValidator } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ComplaintsService } from './complaints.service';
 import { CreateComplaintDto } from './dto/create-complaint.dto';
 import { UpdateComplaintDto } from './dto/update-complaint.dto';
@@ -10,12 +11,23 @@ export class ComplaintsController {
   constructor(private readonly complaintsService: ComplaintsService) {}
 
   @Post()
-  async create(@Body() createComplaintDto: CreateComplaintDto) {
+  @UseInterceptors(FileInterceptor('photo'))
+  async create(
+    @Body() createComplaintDto: CreateComplaintDto,
+    @UploadedFile(
+      new ParseFilePipe({
+        validators: [
+          new MaxFileSizeValidator({ maxSize: 5 * 1024 * 1024 }), // 5MB
+          new FileTypeValidator({ fileType: '.(png|jpeg|jpg)' }),
+        ],
+      }),
+    )
+    file: Express.Multer.File,
+  ) {
     try {
-      return await this.complaintsService.create(createComplaintDto);
+      return await this.complaintsService.create(createComplaintDto, file);
     } catch (error) {
-      // Lanzar una excepción con el mensaje del error específico
-      throw new HttpException(`Error creating complaint: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+      throw new Error(`Error creating complaint: ${error.message}`);
     }
   }
 

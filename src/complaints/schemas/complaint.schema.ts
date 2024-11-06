@@ -1,14 +1,25 @@
+// schemas/complaint.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
 import { ComplaintCategory } from './complaint_category.schema';
 import { District } from './district.schema';
+import { User } from 'src/users/schemas/user.schema';
 
 export type ComplaintDocument = Complaint & Document;
 
-@Schema({ timestamps: true })
+@Schema({
+  timestamps: true,
+  toJSON: {
+    virtuals: true,
+    transform: function (doc, ret) {
+      ret.id = ret._id;
+      delete ret._id;
+      delete ret.__v;
+      return ret;
+    },
+  },
+})
 export class Complaint {
-  _id: MongooseSchema.Types.ObjectId;
-
   @Prop({ required: true })
   title: string;
 
@@ -18,21 +29,23 @@ export class Complaint {
   @Prop({ required: true })
   ubication: string;
 
-  @Prop({ required: true, type: Date, default: Date.now })
-  created_at: Date;
-
-  @Prop({ required: true, type: Date, default: Date.now })
-  updated_at: Date;
-
   @Prop({ type: String, ref: 'User', required: true })
-  user: string;
+  user: User | string; // Referencia singular, no plural
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'ComplaintCategory', required: true })
-  category: ComplaintCategory;
+  category: ComplaintCategory; // Referencia singular
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'District', required: true })
-  district: District;
+  district: District; // Referencia singular
+
+  @Prop({ type: String })
+  imageUrl: string;
+
+  @Prop({ type: Date, default: Date.now })
+  created_at: Date;
+
+  @Prop({ type: Date, default: Date.now })
+  updated_at: Date;
 }
 
 export const ComplaintSchema = SchemaFactory.createForClass(Complaint);
-

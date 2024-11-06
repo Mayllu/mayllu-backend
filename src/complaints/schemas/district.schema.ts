@@ -18,12 +18,12 @@ export class District {
     type: {
       type: String,
       enum: ['Point'],
-      default: 'Point'
+      default: 'Point',
     },
     coordinates: {
       type: [Number],
-      required: true
-    }
+      required: true,
+    },
   })
   location: Location;
 

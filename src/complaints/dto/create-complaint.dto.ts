@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsNumber, IsLatitude, IsLongitude, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber, IsLatitude, IsLongitude, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateComplaintDto {
   @IsNotEmpty()
@@ -22,14 +22,14 @@ export class CreateComplaintDto {
   longitude: number;
 
   @IsNotEmpty()
-  @IsString() // Cambiado de IsNumber a IsString para MongoDB ObjectId
+  @IsString()
   categoryId: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
-  created_at: Date | string;
+  created_at?: Date | string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsDateString()
-  updated_at: Date | string;
+  updated_at?: Date | string;
 }

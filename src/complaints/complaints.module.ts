@@ -11,9 +11,24 @@ import { User, UserSchema } from '../users/schemas/user.schema';
 import { ComplaintCategory, ComplaintCategorySchema } from './schemas/complaint_category.schema';
 import { District, DistrictSchema } from './schemas/district.schema';
 import { ComplaintState, ComplaintStateSchema } from './schemas/complaint_state.schema';
+import { ComplaintCategoryService } from './complaint-category.service';
+import { ComplaintCategoryController } from './complaint-category.controller';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+import { StorageService } from './storage.service';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [
+    ConfigModule,
+    MulterModule.register({
+      storage: memoryStorage(),
+    }),
+    MulterModule.register({
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+      },
+    }),
     HttpModule,
     MongooseModule.forFeature([
       { name: Complaint.name, schema: ComplaintSchema },
@@ -23,11 +38,13 @@ import { ComplaintState, ComplaintStateSchema } from './schemas/complaint_state.
       { name: ComplaintState.name, schema: ComplaintStateSchema },
     ]),
   ],
-  controllers: [ComplaintsController],
+  controllers: [ComplaintsController, ComplaintCategoryController],
   providers: [
     ComplaintsService,
     ComplaintStateService,
+    StorageService,
     GeolocationService,
+    ComplaintCategoryService, // Add this line
   ],
 })
 export class ComplaintsModule {}
