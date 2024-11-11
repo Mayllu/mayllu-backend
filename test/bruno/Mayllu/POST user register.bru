@@ -1,0 +1,20 @@
+meta {
+  name: POST user register
+  type: http
+  seq: 4
+}
+
+post {
+  url: 127.0.0.1:3000/api/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "test",
+    "email": "test@gmail.com",
+    "password": "$2b$10$7abtichOsoUHI9s5YgBIseDH8rospsaltk4UwHFtP8GWLKTp3tpFA",
+    "dni": "12345678"
+  }
+}

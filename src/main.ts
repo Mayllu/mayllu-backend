@@ -1,47 +1,29 @@
-import helmet from 'helmet';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { ConfigService } from '@nestjs/config';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port = process.env.MAYLLU_BACKEND_PORT || 3000;
-  const config = new DocumentBuilder().setTitle('Mayllu API').setDescription('API for Mayllu').setVersion('1.0').build();
-
+  
   app.setGlobalPrefix('api');
-
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true, // remove non allowed fields (dto)
-      forbidNonWhitelisted: true, // error if non allowed fields are sent
-      transform: true, // transform payload to dto
-    }),
-  );
-
-  app.enableCors({
-    origin: ['*'],
-    preflightContinue: false,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  });
-
-  app.use(
-    helmet({
-      contentSecurityPolicy: false,
-    }),
-  );
-
-  // swagger module for handle visual documentation
+  app.useGlobalPipes(new ValidationPipe());
+  
+  const config = new DocumentBuilder()
+    .setTitle('Mayllu API')
+    .setDescription('API Documentation for Mayllu')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+    
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document, {
-    swaggerOptions: {
-      filter: true, // tagged routes
-      showRequestDuration: true, // show time of request
-    },
-  });
+  SwaggerModule.setup('api/docs', app, document);
 
+  const configService = app.get(ConfigService);
+  const port = configService.get<number>('MAYLLU_BACKEND_PORT');
+  
   await app.listen(port);
+  console.log(`Application is running on: ${await app.getUrl()}`);
 }
-
 bootstrap();

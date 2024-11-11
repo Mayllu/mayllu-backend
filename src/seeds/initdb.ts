@@ -1,26 +1,31 @@
-import { MongoClient } from 'mongodb';
-import { Types } from 'mongoose';
+// handle seeding for sample data with current schemas
 
-const MONGODB_URI = 'mongodb://localhost:27017/mayllu_db';
+import { MongoClient, ObjectId } from 'mongodb';
+
+const MONGODB_URI = 'mongodb://localhost:27017/maylludb';
 
 async function seed() {
   const client = new MongoClient(MONGODB_URI);
 
   try {
     await client.connect();
-    console.log('Connected to MongoDB');
+    const db = client.db('maylludb');
+    console.log('🚀 Connected to MongoDB');
 
-    const db = client.db('mayllu_db');
+    // clean previous example collections 
+    const collections = [
+      'users',
+      'complaintcategories',
+      'districts',
+      'complaints',
+      'complaintstates'
+    ];
+    for (const eachCollection of collections) {
+      await db.collection(eachCollection).deleteMany({});
+      console.log(`🧽 Cleaned ${eachCollection} collection`);
+    };
 
-    // Limpiar todas las colecciones
-    const collections = ['users', 'complaintcategories', 'districts', 'complaints', 'complaintstates'];
-
-    for (const collection of collections) {
-      await db.collection(collection).deleteMany({});
-      console.log(`Cleaned ${collection} collection`);
-    }
-
-    // Insertar usuarios
+    // insert example users with roles
     const users = await db.collection('users').insertMany([
       {
         dni: '72671060',
@@ -41,116 +46,168 @@ async function seed() {
         updated_at: new Date(),
       },
     ]);
-    console.log('Users created:', users.insertedIds);
+    console.log('🔒 Users created');
 
-    // Insertar categorías con categoryId numérico
+    // insert example categories - this will linked to complaints
     const categories = await db.collection('complaintcategories').insertMany([
       {
-        categoryId: 1,
         name: 'Alumbrado Público',
-        description: 'Problemas con el alumbrado público',
-        created_at: new Date(),
-        updated_at: new Date(),
       },
       {
-        categoryId: 2,
         name: 'Residuos',
-        description: 'Problemas con la recolección de residuos',
-        created_at: new Date(),
-        updated_at: new Date(),
       },
       {
-        categoryId: 3,
         name: 'Veredas',
-        description: 'Problemas con el estado de las veredas',
-        created_at: new Date(),
-        updated_at: new Date(),
       },
       {
-        categoryId: 4,
         name: 'Seguridad',
-        description: 'Problemas de seguridad ciudadana',
-        created_at: new Date(),
-        updated_at: new Date(),
       },
     ]);
-    console.log('Categories created:', categories.insertedIds);
+    console.log('🧩 Categories created');
 
-    // Insertar distritos con coordenadas
+    // insert districts with location (geojson)
     const districts = await db.collection('districts').insertMany([
       {
         name: 'Miraflores',
-        ubication: '(-12.1217, -77.0307)',
-        created_at: new Date(),
-        updated_at: new Date(),
+        location: {
+          type: 'Point',
+          coordinates: [-77.0307, -12.1217]
+        },
+        complaints: []
       },
       {
         name: 'San Isidro',
-        ubication: '(-12.0989, -77.0339)',
-        created_at: new Date(),
-        updated_at: new Date(),
+        location: {
+          type: 'Point',
+          coordinates: [-77.0339, -12.0989]
+        },
+        complaints: []
       },
       {
         name: 'Surco',
-        ubication: '(-12.1416, -76.9917)',
-        created_at: new Date(),
-        updated_at: new Date(),
+        location: {
+          type: 'Point',
+          coordinates: [-76.9917, -12.1416]
+        },
+        complaints: []
       },
     ]);
-    console.log('Districts created:', districts.insertedIds);
+    console.log('⭐️ Districts created');
 
-    // Crear algunas quejas de ejemplo
+    // insert complaints with categories, districts and users
     const complaints = await db.collection('complaints').insertMany([
       {
-        user: '72671060',
         title: 'Falta de iluminación',
         description: 'La calle está completamente a oscuras',
-        ubication: '(-12.1217, -77.0307)',
-        category: new Types.ObjectId(Object.values(categories.insertedIds)[0]),
-        district: new Types.ObjectId(Object.values(districts.insertedIds)[0]),
+        ubication: '-12.1217,-77.0307',
+        user: '72671060',
+        category: categories.insertedIds[0],
+        district: districts.insertedIds[0],
+        imageUrl: '',
         created_at: new Date(),
-        updated_at: new Date(),
+        updated_at: new Date()
       },
       {
-        user: '87654321',
         title: 'Basura acumulada',
         description: 'Hay basura acumulada desde hace días',
-        ubication: '(-12.0989, -77.0339)',
-        category: new Types.ObjectId(Object.values(categories.insertedIds)[1]),
-        district: new Types.ObjectId(Object.values(districts.insertedIds)[1]),
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-    ]);
-    console.log('Complaints created:', complaints.insertedIds);
-
-    // Crear estados iniciales para las quejas
-    const complaintStates = await db.collection('complaintstates').insertMany([
-      {
-        complaint: new Types.ObjectId(Object.values(complaints.insertedIds)[0]),
-        state: 'PENDING',
-        description: 'Queja registrada',
-        user: '72671060',
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
-      {
-        complaint: new Types.ObjectId(Object.values(complaints.insertedIds)[1]),
-        state: 'IN_PROGRESS',
-        description: 'En proceso de atención',
+        ubication: '-12.0989,-77.0339',
         user: '87654321',
+        category: categories.insertedIds[1],
+        district: districts.insertedIds[1],
+        imageUrl: '',
         created_at: new Date(),
-        updated_at: new Date(),
+        updated_at: new Date()
       },
+      {
+        title: 'Vereda en mal estado',
+        description: 'Vereda rota y peligrosa',
+        ubication: '-76.9917,-12.1416',
+        user: '72671060',
+        category: categories.insertedIds[2],
+        district: districts.insertedIds[2],
+        imageUrl: '',
+        created_at: new Date(),
+        updated_at: new Date()
+      },
+      {
+        title: 'Problema de seguridad',
+        description: 'Falta de vigilancia en la zona',
+        ubication: '-76.9917,-12.1416',
+        user: '87654321',
+        category: categories.insertedIds[3],
+        district: districts.insertedIds[2], // surco gonna have 2 complaints
+        imageUrl: '',
+        created_at: new Date(),
+        updated_at: new Date()
+      }
     ]);
-    console.log('Complaint states created:', complaintStates.insertedIds);
+    console.log('📍 Complaints created');
 
-    console.log('Database seeded successfully!');
+    // map complaints to districts
+    const complaintsArray = await db.collection('complaints').find().toArray();
+    const complaintsByDistrict = new Map<string, ObjectId[]>();
+    console.log('🔍 Total complaints found:', complaintsArray.length);
+
+    for (const complaint of complaintsArray) {
+        const districtId = complaint.district.toString();
+        
+        // if districtId not associated then create empty array else push complaint id
+        if (!complaintsByDistrict.has(districtId)) complaintsByDistrict.set(districtId, []);
+        complaintsByDistrict.get(districtId)!.push(complaint._id);
+    }
+
+    // update districts
+    for (const [districtId, districtComplaints] of complaintsByDistrict) {
+        const result = await db.collection('districts').updateOne(
+            { _id: new ObjectId(districtId) },
+            { $set: { complaints: districtComplaints } }
+        );
+    }
+    console.log('🔗 Complaints linked to districts');
+    
+    // create complaint states
+    await db.collection('complaintstates').insertMany([
+      {
+        complaint: complaints.insertedIds[0],
+        state: 'PENDING',
+        user: '72671060',
+        created_at: new Date()
+      },
+      {
+        complaint: complaints.insertedIds[1],
+        state: 'IN_PROGRESS',
+        user: '87654321',
+        created_at: new Date()
+      },
+      {
+        complaint: complaints.insertedIds[2],
+        state: 'PENDING',
+        user: '72671060',
+        created_at: new Date()
+      },
+      {
+        complaint: complaints.insertedIds[3],
+        state: 'IN_PROGRESS',
+        user: '87654321',
+        created_at: new Date()
+      }
+    ]);
+    console.log('⏳ Complaint states created');
+
+    const updatedDistricts = await db.collection('districts').find().toArray();
+    console.log('📊 Districts complaint counts:', 
+      updatedDistricts.map(d => ({
+        name: d.name,
+        complaintCount: d.complaints.length
+      }))
+    );
+
+    console.log('✅ Database seeded successfully!');
   } catch (error) {
-    console.error('Error seeding database:', error);
+    console.error('❌ Error seeding database:', error);
   } finally {
     await client.close();
-    console.log('Database connection closed');
+    console.log('💀 Database connection closed');
   }
 }
 

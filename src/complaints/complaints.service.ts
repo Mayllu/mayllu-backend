@@ -10,6 +10,7 @@ import { GeolocationService } from './geolocation.service';
 import { ComplaintStateService } from './complaints-state.service';
 import { ComplaintCategoryService } from './complaint-category.service';
 import { StorageService } from './storage.service';
+
 interface FileUpload {
   fieldname: string;
   originalname: string;
@@ -30,7 +31,7 @@ export class ComplaintsService {
     private readonly categoryService: ComplaintCategoryService, // Add this line
     private readonly geolocationService: GeolocationService,
     private readonly complaintStateService: ComplaintStateService,
-  ) {}
+  ) { }
 
   async findAllComplaints() {
     try {
@@ -58,9 +59,9 @@ export class ComplaintsService {
       // Upload image to Backblaze
       const imageUrl = await this.storageService.uploadFile(file);
 
-      const user = await this.userModel.findOne({ dni: userId }).exec();
+      const user = await this.userModel.findOne({ dni: createComplaintDto.userId });
       if (!user) {
-        throw new Error(`User with ID ${userId} not found`);
+        throw new Error(`User with DNI ${createComplaintDto.userId} not found`);
       }
 
       // Validate and get category

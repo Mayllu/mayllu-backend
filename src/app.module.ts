@@ -1,16 +1,23 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AuthModule } from './auth/auth.module';
 import { ComplaintsModule } from './complaints/complaints.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      ignoreEnvFile: false,
+    ConfigModule.forRoot({ isGlobal: true }),
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MAYLLU_MONGO_URI'),
+      }),
+      inject: [ConfigService],
     }),
-    MongooseModule.forRoot(process.env.MAYLLU_MONGO_URI),
+    AuthModule,
     ComplaintsModule,
+    UsersModule,
   ],
 })
-export class AppModule {}
+export class AppModule { }
