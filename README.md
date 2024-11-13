@@ -11,6 +11,21 @@ Bienvenido al proyecto de backend para Mayllu creado con **NestJS**. Este proyec
 - [PostgreSQL](https://www.postgresql.org/) - Sistema de gestión de bases de datos relacional
 - [TypeORM](https://typeorm.io/) - ORM para TypeScript y JavaScript
 
+## 🚀 Archivo env
+
+Ejemplo de archivo env para poder desarrollar el software frontend, reemplazar con sus propias api key
+
+```
+MAYLLU_MONGO_URI=
+MAYLLU_BACKEND_PORT=
+JWT_SECRET=
+B2_APPLICATION_KEY_ID=
+B2_APPLICATION_KEY=
+B2_BUCKET_ID=
+B2_BUCKET_NAME=
+GOOGLE_API_KEY=
+```
+
 ## 📦 Instalación
 
 Sigue estos pasos para configurar el proyecto en tu máquina local:
