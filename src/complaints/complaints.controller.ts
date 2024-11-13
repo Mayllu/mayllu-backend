@@ -35,13 +35,18 @@ export class ComplaintsController {
   async findAll() {
     try {
       return await this.complaintsService.findAllComplaints();
-    } catch {
-      throw new HttpException('Error fetching complaints', HttpStatus.INTERNAL_SERVER_ERROR);
+    } catch (error) {
+      console.error('Error in findAll:', error); // Para debugging
+      throw new HttpException(
+        `Error fetching complaints: ${error.message}`, 
+        HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 
   @Get(':id')
   async findOne(@Param('id') id: string) {
+    console.log('ID:', id);
     try {
       const complaint = await this.complaintsService.findOneComplaint(id.toString());
       if (!complaint) {

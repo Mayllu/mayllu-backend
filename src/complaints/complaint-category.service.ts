@@ -5,7 +5,14 @@ import { ComplaintCategory, ComplaintCategoryDocument } from './schemas/complain
 
 @Injectable()
 export class ComplaintCategoryService implements OnModuleInit {
-  private defaultCategories = [{ name: 'Infraestructura' }, { name: 'Seguridad' }, { name: 'Limpieza' }, { name: 'Transporte' }, { name: 'Ruido' }, { name: 'Otros' }];
+  private defaultCategories = [
+    { name: 'Alumbrado', color: '#FF9500', icon: 'lightbulb', description: 'Problemas con el alumbrado público' },
+    { name: 'Parques', color: '#34C759', icon: 'park', description: 'Mantenimiento de áreas verdes y parques' },
+    { name: 'Seguridad', color: '#5856D6', icon: 'shield', description: 'Problemas de seguridad ciudadana' },
+    { name: 'Basura', color: '#FF3B30', icon: 'delete', description: 'Problemas con residuos y limpieza' },
+    { name: 'Calles', color: '#78AEFF', icon: 'road', description: 'Mantenimiento de pistas y veredas' },
+    { name: 'Otros', color: '#6B7280', icon: 'more-horiz', description: 'Otras incidencias' },
+  ];
 
   constructor(
     @InjectModel(ComplaintCategory.name)
@@ -13,32 +20,73 @@ export class ComplaintCategoryService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
-    // Initialize default categories if they don't exist
-    await this.initializeDefaultCategories();
+    try {
+      const count = await this.categoryModel.countDocuments();
+      
+      if (count === 0) {
+        console.log('Initializing default categories...');
+        await this.categoryModel.insertMany(this.defaultCategories);
+        console.log('Default categories created successfully');
+      } else {
+        console.log('Categories already exist, skipping initialization');
+      }
+    } catch (error) {
+      console.error('Error initializing categories:', error);
+      throw error;
+    }
   }
 
-  private async initializeDefaultCategories() {
-    for (const category of this.defaultCategories) {
-      const existingCategory = await this.categoryModel.findOne({ name: category.name }).exec();
-      if (!existingCategory) {
-        await new this.categoryModel(category).save();
+  async findOrCreateDefault(): Promise<ComplaintCategoryDocument> {
+    try {
+      let defaultCategory = await this.categoryModel.findOne({
+        name: 'Otros'
+      });
+
+      if (!defaultCategory) {
+        console.log('Creating default "Otros" category...');
+        defaultCategory = await this.categoryModel.create({
+          name: 'Otros',
+          color: '#78909C',
+          icon: 'more-horiz',
+          description: 'Otras incidencias'
+        });
+        console.log('Default category created successfully');
       }
+
+      return defaultCategory;
+    } catch (error) {
+      console.error('Error in findOrCreateDefault:', error);
+      throw error;
     }
   }
 
   async findAll(): Promise<ComplaintCategoryDocument[]> {
-    return this.categoryModel.find().exec();
+    try {
+      return await this.categoryModel.find().sort({ name: 1 }).exec();
+    } catch (error) {
+      console.error('Error in findAll:', error);
+      throw error;
+    }
   }
 
   async findById(id: string): Promise<ComplaintCategoryDocument> {
-    return this.categoryModel.findById(id).exec();
+    try {
+      const category = await this.categoryModel.findById(id).exec();
+      if (!category) {
+        throw new Error(`Category with id ${id} not found`);
+      }
+      return category;
+    } catch (error) {
+      console.error('Error in findById:', error);
+      throw error;
+    }
   }
 
-  async findOrCreateDefault(): Promise<ComplaintCategoryDocument> {
-    const defaultCategory = await this.categoryModel.findOne({ name: 'Otros' }).exec();
-    if (!defaultCategory) {
-      return await new this.categoryModel({ name: 'Otros' }).save();
+  async findByName(name: string): Promise<ComplaintCategoryDocument> {
+    const category = await this.categoryModel.findOne({ name }).exec();
+    if (!category) {
+      throw new Error(`Category with name ${name} not found`);
     }
-    return defaultCategory;
+    return category;
   }
 }

@@ -7,11 +7,11 @@ export class UpdateComplaintDto {
 
   @IsOptional()
   @IsNumber()
-  latitude?: number;
+  latitude?: string;
 
   @IsOptional()
   @IsNumber()
-  longitude?: number;
+  longitude?: string;
 
   @IsOptional()
   @IsNumber()

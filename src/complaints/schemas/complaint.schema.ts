@@ -1,24 +1,16 @@
 // schemas/complaint.schema.ts
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
-import { ComplaintCategory } from './complaint_category.schema';
 import { District } from './district.schema';
-import { User } from 'src/users/schemas/user.schema';
 
-export type ComplaintDocument = Complaint & Document;
+interface CategoryDetails {
+  _id: MongooseSchema.Types.ObjectId;
+  name: string;
+  color: string;
+  icon: string;
+}
 
-@Schema({
-  timestamps: true,
-  toJSON: {
-    virtuals: true,
-    transform: function (doc, ret) {
-      ret.id = ret._id;
-      delete ret._id;
-      delete ret.__v;
-      return ret;
-    },
-  },
-})
+@Schema({ timestamps: true })
 export class Complaint {
   @Prop({ required: true })
   title: string;
@@ -29,23 +21,38 @@ export class Complaint {
   @Prop({ required: true })
   ubication: string;
 
-  @Prop({ type: String, ref: 'User', required: true })
-  user: User | string; // Referencia singular, no plural
+  @Prop()
+  formattedAddress: string;
 
-  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'ComplaintCategory', required: true })
-  category: ComplaintCategory; // Referencia singular
+  @Prop()
+  street: string;
+
+  @Prop()
+  streetNumber: string;
+
+  @Prop()
+  neighborhood: string;
+
+  @Prop({ type: String, ref: 'User', required: true })
+  user: string;
+
+  @Prop({
+    type: {
+      _id: { type: MongooseSchema.Types.ObjectId, ref: 'ComplaintCategory' },
+      name: String,
+      color: String,
+      icon: String,
+    },
+    required: true,
+  })
+  category: CategoryDetails;
 
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'District', required: true })
-  district: District; // Referencia singular
+  district: District;
 
   @Prop({ type: String })
   imageUrl: string;
-
-  @Prop({ type: Date, default: Date.now })
-  created_at: Date;
-
-  @Prop({ type: Date, default: Date.now })
-  updated_at: Date;
 }
 
+export type ComplaintDocument = Complaint & Document;
 export const ComplaintSchema = SchemaFactory.createForClass(Complaint);

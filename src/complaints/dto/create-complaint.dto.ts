@@ -1,35 +1,25 @@
-import { IsNotEmpty, IsString, IsNumber, IsLatitude, IsLongitude, IsOptional, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsString, IsNumber } from 'class-validator';
 
 export class CreateComplaintDto {
-  @IsNotEmpty()
   @IsString()
-  userId: string;
-
   @IsNotEmpty()
-  @IsString()
   title: string;
 
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   description: string;
 
   @IsNotEmpty()
-  @IsLatitude()
-  latitude: number;
+  latitude: string;
 
   @IsNotEmpty()
-  @IsLongitude()
-  longitude: number;
+  longitude: string;
 
-  @IsNotEmpty()
   @IsString()
-  categoryId: string;
+  @IsNotEmpty()
+  userId: string;
 
-  @IsOptional()
-  @IsDateString()
-  created_at?: Date | string;
-
-  @IsOptional()
-  @IsDateString()
-  updated_at?: Date | string;
+  @IsString()
+  @IsNotEmpty()
+  categoryName: string;
 }

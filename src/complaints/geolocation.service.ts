@@ -1,10 +1,17 @@
-// geolocation.service.ts
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { District, DistrictDocument } from './schemas/district.schema';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+
+interface LocationDetails {
+  district: DistrictDocument,
+  formattedAddress: string;
+  street: string;
+  streetNumber: string;
+  neighborhood: string;
+}
 
 @Injectable()
 export class GeolocationService {
@@ -14,32 +21,40 @@ export class GeolocationService {
     private readonly districtModel: Model<DistrictDocument>,
   ) {}
 
-  async findOrCreateDistrict(latitude: number, longitude: number): Promise<DistrictDocument> {
+  async getLocationDetails(latitude: string, longitude: string): Promise<LocationDetails> {
     try {
+      const lat = parseFloat(latitude);
+      const lng = parseFloat(longitude);
+
       const response = await firstValueFrom(
         this.httpService.get(`https://maps.googleapis.com/maps/api/geocode/json`, {
           params: {
-            latlng: `${latitude},${longitude}`,
+            latlng: `${lat},${lng}`,
             key: process.env.GOOGLE_API_KEY,
           },
         }),
       );
 
       const results = response.data.results;
-      let districtName = this.extractDistrictFromResults(results);
-
-      // Si no se puede obtener el nombre del distrito, usar una ubicación por defecto
-      if (!districtName) {
-        districtName = 'Ubicación Desconocida';
+      if (!results || results.length === 0) {
+        throw new Error('No results found');
       }
 
-      // Verificar si el distrito ya existe
+      const addressComponents = results[0].address_components;
+      const formattedAddress = results[0].formatted_address;
+
+      // Extraer componentes de la dirección
+      const street = this.findAddressComponent(addressComponents, 'route');
+      const streetNumber = this.findAddressComponent(addressComponents, 'street_number');
+      const neighborhood = this.findAddressComponent(addressComponents, 'sublocality') ||
+        this.findAddressComponent(addressComponents, 'neighborhood');
+      const districtName = this.extractDistrictFromResults(results);
+
+      // Crear o encontrar el distrito
       let district = await this.districtModel.findOne({ name: districtName }).exec();
-
       if (!district) {
-        // Si el distrito no existe, créalo
-        district = new this.districtModel({ 
-          name: districtName,
+        district = new this.districtModel({
+          name: districtName || 'Ubicación Desconocida',
           location: {
             type: 'Point',
             coordinates: [longitude, latitude]
@@ -48,26 +63,52 @@ export class GeolocationService {
         await district.save();
       }
 
-      return district;
+      return {
+        district,
+        formattedAddress,
+        street: street || 'Calle no especificada',
+        streetNumber: streetNumber || 'S/N',
+        neighborhood: neighborhood || 'Zona no especificada'
+      };
     } catch (error) {
-      // Si hay un error con la API de Google, crear un distrito por defecto
-      const defaultDistrictName = 'Ubicación Desconocida';
-      let district = await this.districtModel.findOne({ name: defaultDistrictName }).exec();
+      const defaultDistrict = await this.findOrCreateDefaultDistrict(
+        parseFloat(latitude), 
+        parseFloat(longitude)
+      );
 
-      if (!district) {
-        district = new this.districtModel({ 
-          name: defaultDistrictName,
-          location: {
-            type: 'Point',
-            coordinates: [longitude, latitude]
-          }
-        });
-        await district.save();
-      }
-
-      return district;
+      return {
+        district: defaultDistrict,
+        formattedAddress: 'Dirección no disponible',
+        street: 'Calle no especificada',
+        streetNumber: 'S/N',
+        neighborhood: 'Zona no especificada'
+      };
     }
   }
+
+  private findAddressComponent(components: any[], type: string): string | null {
+    const component = components.find(comp => comp.types.includes(type));
+    return component ? component.long_name : null;
+  }
+
+  private async findOrCreateDefaultDistrict(latitude: number, longitude: number): Promise<DistrictDocument> {
+    const defaultDistrictName = 'Ubicación Desconocida';
+    let district = await this.districtModel.findOne({ name: defaultDistrictName }).exec();
+
+    if (!district) {
+      district = new this.districtModel({ 
+        name: defaultDistrictName,
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        }
+      });
+      await district.save();
+    }
+
+    return district;
+  }
+
 
   private extractDistrictFromResults(results: any[]): string | null {
     if (!results || results.length === 0) {

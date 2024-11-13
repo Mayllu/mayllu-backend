@@ -52,15 +52,39 @@ async function seed() {
     const categories = await db.collection('complaintcategories').insertMany([
       {
         name: 'Alumbrado Público',
+        color: '#FFA726',
+        icon: 'lightbulb',
+        description: 'Problemas con el alumbrado público'
       },
       {
         name: 'Residuos',
+        color: '#26A69A',
+        icon: 'delete',
+        description: 'Problemas con residuos y limpieza'
       },
       {
-        name: 'Veredas',
+        name: 'Calles',
+        color: '#42A5F5',
+        icon: 'road',
+        description: 'Mantenimiento de pistas y veredas'
       },
       {
         name: 'Seguridad',
+        color: '#EF5350',
+        icon: 'security',
+        description: 'Problemas de seguridad ciudadana'
+      },
+      {
+        name: 'Parques',
+        color: '#66BB6A',
+        icon: 'park',
+        description: 'Mantenimiento de áreas verdes y parques'
+      },
+      {
+        name: 'Otros',
+        color: '#78909C',
+        icon: 'more-horiz',
+        description: 'Otras incidencias'
       },
     ]);
     console.log('🧩 Categories created');
@@ -99,7 +123,11 @@ async function seed() {
       {
         title: 'Falta de iluminación',
         description: 'La calle está completamente a oscuras',
-        ubication: '-12.1217,-77.0307',
+        ubication: '(-12.1217,-77.0307)',
+        formattedAddress: 'Av. José Larco 123, Miraflores',
+        street: 'Av. José Larco',
+        streetNumber: '123',
+        neighborhood: 'Miraflores Centro',
         user: '72671060',
         category: categories.insertedIds[0],
         district: districts.insertedIds[0],
@@ -110,7 +138,11 @@ async function seed() {
       {
         title: 'Basura acumulada',
         description: 'Hay basura acumulada desde hace días',
-        ubication: '-12.0989,-77.0339',
+        ubication: '(-12.0989,-77.0339)',
+        formattedAddress: 'Av. Javier Prado 456, San Isidro',
+        street: 'Av. Javier Prado',
+        streetNumber: '456',
+        neighborhood: 'San Isidro Financiero',
         user: '87654321',
         category: categories.insertedIds[1],
         district: districts.insertedIds[1],
@@ -121,7 +153,11 @@ async function seed() {
       {
         title: 'Vereda en mal estado',
         description: 'Vereda rota y peligrosa',
-        ubication: '-76.9917,-12.1416',
+        ubication: '(-76.9917,-12.1416)',
+        formattedAddress: 'Av. Primavera 789, Surco',
+        street: 'Av. Primavera',
+        streetNumber: '789',
+        neighborhood: 'Chacarilla',
         user: '72671060',
         category: categories.insertedIds[2],
         district: districts.insertedIds[2],
@@ -132,10 +168,14 @@ async function seed() {
       {
         title: 'Problema de seguridad',
         description: 'Falta de vigilancia en la zona',
-        ubication: '-76.9917,-12.1416',
+        ubication: '(-76.9917,-12.1416)',
+        formattedAddress: 'Av. Benavides 321, Surco',
+        street: 'Av. Benavides',
+        streetNumber: '321',
+        neighborhood: 'Chacarilla',
         user: '87654321',
         category: categories.insertedIds[3],
-        district: districts.insertedIds[2], // surco gonna have 2 complaints
+        district: districts.insertedIds[2],
         imageUrl: '',
         created_at: new Date(),
         updated_at: new Date()
@@ -145,20 +185,20 @@ async function seed() {
 
     // map complaints to districts
     const complaintsArray = await db.collection('complaints').find().toArray();
-    const complaintsByDistrict = new Map<string, ObjectId[]>();
+    const complaintsByDistrict = new Map();
     console.log('🔍 Total complaints found:', complaintsArray.length);
 
     for (const complaint of complaintsArray) {
         const districtId = complaint.district.toString();
-        
-        // if districtId not associated then create empty array else push complaint id
-        if (!complaintsByDistrict.has(districtId)) complaintsByDistrict.set(districtId, []);
-        complaintsByDistrict.get(districtId)!.push(complaint._id);
+        if (!complaintsByDistrict.has(districtId)) {
+            complaintsByDistrict.set(districtId, []);
+        }
+        complaintsByDistrict.get(districtId).push(complaint._id);
     }
 
     // update districts
     for (const [districtId, districtComplaints] of complaintsByDistrict) {
-        const result = await db.collection('districts').updateOne(
+        await db.collection('districts').updateOne(
             { _id: new ObjectId(districtId) },
             { $set: { complaints: districtComplaints } }
         );
@@ -207,7 +247,7 @@ async function seed() {
     console.error('❌ Error seeding database:', error);
   } finally {
     await client.close();
-    console.log('💀 Database connection closed');
+    console.log('💤 Database connection closed');
   }
 }
 
