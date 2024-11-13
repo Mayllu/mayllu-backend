@@ -45,13 +45,13 @@ export class StorageService {
   async uploadFile(file: FileUpload): Promise<string> {
     try {
       await this.init();
-      
+
       const { data: uploadUrl } = await this.b2.getUploadUrl({
         bucketId: this.bucketId,
       });
-      
+
       console.log('Upload URL data:', uploadUrl);
-      
+
       const fileName = `complaints/${Date.now()}-${file.originalname.replace(/\s+/g, '-')}`;
       const uploadResult = await this.b2.uploadFile({
         uploadUrl: uploadUrl.uploadUrl,
@@ -61,12 +61,12 @@ export class StorageService {
         contentLength: file.size,
         contentType: file.mimetype,
       });
-      
+
       console.log('Upload result:', uploadResult);
-      
+
       const fileUrl = `${this.downloadUrl}/${fileName}`;
       console.log('Generated public URL:', fileUrl);
-      
+
       return fileUrl;
     } catch (error) {
       console.error('Detailed error:', error);

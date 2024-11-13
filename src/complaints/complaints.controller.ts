@@ -37,10 +37,20 @@ export class ComplaintsController {
       return await this.complaintsService.findAllComplaints();
     } catch (error) {
       console.error('Error in findAll:', error); // Para debugging
-      throw new HttpException(
-        `Error fetching complaints: ${error.message}`, 
-        HttpStatus.INTERNAL_SERVER_ERROR
-      );
+      throw new HttpException(`Error fetching complaints: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+
+  @Get('user/:dni')
+  async findAllComplaintsByDni(@Param('dni') dni: string) {
+    try {
+      const complaints = await this.complaintsService.findComplaintsByDni(dni);
+      if (!complaints || complaints.length === 0) {
+        throw new NotFoundException(`No complaints found for user with DNI ${dni}`);
+      }
+      return complaints;
+    } catch (error) {
+      throw new HttpException(`Error fetching complaints: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
 

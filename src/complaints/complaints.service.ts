@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Complaint, ComplaintDocument } from './schemas/complaint.schema';
@@ -22,7 +22,7 @@ interface FileUpload {
 @Injectable()
 export class ComplaintsService {
   private readonly logger = new Logger(ComplaintsService.name);
-  
+
   constructor(
     @InjectModel(Complaint.name) private readonly complaintModel: Model<ComplaintDocument>,
     @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
@@ -30,7 +30,7 @@ export class ComplaintsService {
     private readonly storageService: StorageService,
     private readonly categoryService: ComplaintCategoryService,
     private readonly geolocationService: GeolocationService,
-  ) { }
+  ) {}
 
   async findAllComplaints() {
     try {
@@ -41,7 +41,7 @@ export class ComplaintsService {
           model: 'User',
           // Especificamos que el campo local 'user' contiene el DNI
           localField: 'user',
-          foreignField: 'dni'
+          foreignField: 'dni',
         })
         .populate('category')
         .populate('district')
@@ -67,7 +67,7 @@ export class ComplaintsService {
         path: 'user',
         model: 'User',
         localField: 'user',
-        foreignField: 'dni'
+        foreignField: 'dni',
       })
       .populate('category')
       .populate('district')
@@ -75,48 +75,58 @@ export class ComplaintsService {
       .exec();
   }
 
-  // complaints.service.ts
-async create(createComplaintDto: CreateComplaintDto, file: FileUpload): Promise<ComplaintDocument> {
-  try {
-    const { latitude, longitude, userId, categoryName } = createComplaintDto;
-
-    // Obtener la categoría completa
-    const category = await this.categoryService.findByName(categoryName);
-    if (!category) throw new Error(`Category with name ${categoryName} not found`);
-
-    // Formatear ubicación y obtener detalles
-    const formattedUbication = `(${latitude}, ${longitude})`;
-    const locationDetails = await this.geolocationService.getLocationDetails(latitude, longitude);
-    
-    // Subir imagen
-    const imageUrl = await this.storageService.uploadFile(file);
-
-    // Crear la queja con los detalles completos de la categoría
-    const complaint = new this.complaintModel({
-      title: createComplaintDto.title,
-      description: createComplaintDto.description,
-      ubication: formattedUbication,
-      formattedAddress: locationDetails.formattedAddress,
-      street: locationDetails.street,
-      streetNumber: locationDetails.streetNumber,
-      neighborhood: locationDetails.neighborhood,
-      user: userId,
-      category: {
-        _id: category._id,
-        name: category.name,
-        color: category.color,
-        icon: category.icon,
-      },
-      district: locationDetails.district._id,
-      imageUrl,
-    });
-
-    await complaint.save();
-    return complaint;
-  } catch (error) {
-    throw new Error(`Error creating complaint: ${error.message}`);
+  // by user dni
+  async findComplaintsByDni(dni: string): Promise<Complaint[]> {
+    try {
+      const complaints = await this.complaintModel.find({ user: dni }).exec();
+      return complaints;
+    } catch (error) {
+      throw new NotFoundException(`Error fetching complaints for DNI ${dni}: ${error.message}`);
+    }
   }
-}
+
+  // complaints.service.ts
+  async create(createComplaintDto: CreateComplaintDto, file: FileUpload): Promise<ComplaintDocument> {
+    try {
+      const { latitude, longitude, userId, categoryName } = createComplaintDto;
+
+      // Obtener la categoría completa
+      const category = await this.categoryService.findByName(categoryName);
+      if (!category) throw new Error(`Category with name ${categoryName} not found`);
+
+      // Formatear ubicación y obtener detalles
+      const formattedUbication = `(${latitude}, ${longitude})`;
+      const locationDetails = await this.geolocationService.getLocationDetails(latitude, longitude);
+
+      // Subir imagen
+      const imageUrl = await this.storageService.uploadFile(file);
+
+      // Crear la queja con los detalles completos de la categoría
+      const complaint = new this.complaintModel({
+        title: createComplaintDto.title,
+        description: createComplaintDto.description,
+        ubication: formattedUbication,
+        formattedAddress: locationDetails.formattedAddress,
+        street: locationDetails.street,
+        streetNumber: locationDetails.streetNumber,
+        neighborhood: locationDetails.neighborhood,
+        user: userId,
+        category: {
+          _id: category._id,
+          name: category.name,
+          color: category.color,
+          icon: category.icon,
+        },
+        district: locationDetails.district._id,
+        imageUrl,
+      });
+
+      await complaint.save();
+      return complaint;
+    } catch (error) {
+      throw new Error(`Error creating complaint: ${error.message}`);
+    }
+  }
 
   async update(id: string, updateComplaintDto: UpdateComplaintDto): Promise<ComplaintDocument> {
     const { latitude, longitude, categoryId, description } = updateComplaintDto;
@@ -127,10 +137,7 @@ async create(createComplaintDto: CreateComplaintDto, file: FileUpload): Promise<
 
       // Actualizar información de ubicación
       try {
-        const locationDetails = await this.geolocationService.getLocationDetails(
-          latitude.toString(),
-          longitude.toString()
-        );
+        const locationDetails = await this.geolocationService.getLocationDetails(latitude.toString(), longitude.toString());
 
         updateData.formattedAddress = locationDetails.formattedAddress;
         updateData.street = locationDetails.street;
@@ -150,12 +157,7 @@ async create(createComplaintDto: CreateComplaintDto, file: FileUpload): Promise<
       updateData.description = description;
     }
 
-    const complaint = await this.complaintModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .populate('user')
-      .populate('category')
-      .populate('district')
-      .exec();
+    const complaint = await this.complaintModel.findByIdAndUpdate(id, updateData, { new: true }).populate('user').populate('category').populate('district').exec();
 
     if (!complaint) {
       throw new Error(`Complaint with ID ${id} not found`);
@@ -169,8 +171,7 @@ async create(createComplaintDto: CreateComplaintDto, file: FileUpload): Promise<
       throw new Error('Invalid complaint ID');
     }
 
-    const complaint = await this.complaintModel
-      .findById(id).exec();
+    const complaint = await this.complaintModel.findById(id).exec();
 
     if (!complaint) {
       throw new Error(`Complaint with ID ${id} not found`);
