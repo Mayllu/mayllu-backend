@@ -9,7 +9,7 @@ export class ComplaintCategoryService implements OnModuleInit {
     { name: 'Alumbrado', color: '#FF9500', icon: 'lightbulb', description: 'Problemas con el alumbrado público' },
     { name: 'Parques', color: '#34C759', icon: 'park', description: 'Mantenimiento de áreas verdes y parques' },
     { name: 'Seguridad', color: '#5856D6', icon: 'shield', description: 'Problemas de seguridad ciudadana' },
-    { name: 'Basura', color: '#FF3B30', icon: 'delete', description: 'Problemas con residuos y limpieza' },
+    { name: 'Residuos', color: '#FF3B30', icon: 'delete', description: 'Problemas con residuos y limpieza' },
     { name: 'Calles', color: '#78AEFF', icon: 'road', description: 'Mantenimiento de pistas y veredas' },
     { name: 'Otros', color: '#6B7280', icon: 'more-horiz', description: 'Otras incidencias' },
   ];

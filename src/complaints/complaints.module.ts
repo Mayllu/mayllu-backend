@@ -17,14 +17,15 @@ import { MulterModule } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { StorageService } from './storage.service';
 import { ConfigModule } from '@nestjs/config';
+import { WinstonModule } from 'nest-winston';
+import { winstonConfig } from '../logging/winston.config';
 
 @Module({
   imports: [
     ConfigModule,
+    WinstonModule.forRoot(winstonConfig),
     MulterModule.register({
       storage: memoryStorage(),
-    }),
-    MulterModule.register({
       limits: {
         fileSize: 5 * 1024 * 1024, // 5MB limit
       },
@@ -44,7 +45,7 @@ import { ConfigModule } from '@nestjs/config';
     ComplaintStateService,
     StorageService,
     GeolocationService,
-    ComplaintCategoryService, // Add this line
+    ComplaintCategoryService,
   ],
 })
 export class ComplaintsModule {}

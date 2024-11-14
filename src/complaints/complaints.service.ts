@@ -1,3 +1,4 @@
+// complaints.service.ts
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
@@ -9,6 +10,7 @@ import { UpdateComplaintDto } from './dto/update-complaint.dto';
 import { GeolocationService } from './geolocation.service';
 import { ComplaintCategoryService } from './complaint-category.service';
 import { StorageService } from './storage.service';
+import { logger, createLogContext } from '../logging/winston.config';
 
 interface FileUpload {
   fieldname: string;
@@ -21,7 +23,7 @@ interface FileUpload {
 
 @Injectable()
 export class ComplaintsService {
-  private readonly logger = new Logger(ComplaintsService.name);
+  private logContext = createLogContext('ComplaintsService');
 
   constructor(
     @InjectModel(Complaint.name) private readonly complaintModel: Model<ComplaintDocument>,
@@ -34,12 +36,13 @@ export class ComplaintsService {
 
   async findAllComplaints() {
     try {
+      logger.info(this.logContext('Fetching all complaints'));
+
       const complaints = await this.complaintModel
         .find()
         .populate({
           path: 'user',
           model: 'User',
-          // Especificamos que el campo local 'user' contiene el DNI
           localField: 'user',
           foreignField: 'dni',
         })
@@ -49,63 +52,103 @@ export class ComplaintsService {
         .exec();
 
       if (!complaints) {
+        logger.error(this.logContext('Error fetching complaints: No complaints found'));
         throw new Error('Error fetching complaints');
       }
 
-      this.logger.log(`Found ${complaints.length} complaints`);
+      logger.info(this.logContext('Successfully fetched complaints', { count: complaints.length }));
       return complaints;
     } catch (error) {
-      this.logger.error(`Error finding complaints: ${error.message}`);
+      logger.error(this.logContext('Error finding complaints', {
+        error: error.message,
+        stack: error.stack
+      }));
       throw new Error(`Error finding complaints: ${error.message}`);
     }
   }
 
   async findAllComplaintsFromUser(dni: string): Promise<ComplaintDocument[]> {
-    return await this.complaintModel
-      .find({ user: dni })
-      .populate({
-        path: 'user',
-        model: 'User',
-        localField: 'user',
-        foreignField: 'dni',
-      })
-      .populate('category')
-      .populate('district')
-      .sort({ createdAt: -1 })
-      .exec();
-  }
-
-  // by user dni
-  async findComplaintsByDni(dni: string): Promise<Complaint[]> {
     try {
-      const complaints = await this.complaintModel.find({ user: dni }).exec();
+      logger.info(this.logContext('Fetching complaints for user', { dni }));
+
+      const complaints = await this.complaintModel
+        .find({ user: dni })
+        .populate({
+          path: 'user',
+          model: 'User',
+          localField: 'user',
+          foreignField: 'dni',
+        })
+        .populate('category')
+        .populate('district')
+        .sort({ createdAt: -1 })
+        .exec();
+
+      logger.info(this.logContext('Successfully fetched user complaints', { 
+        dni, 
+        count: complaints.length 
+      }));
+
       return complaints;
     } catch (error) {
+      logger.error(this.logContext('Error fetching user complaints', {
+        error: error.message,
+        dni,
+        stack: error.stack
+      }));
+      throw error;
+    }
+  }
+
+  async findComplaintsByDni(dni: string): Promise<Complaint[]> {
+    try {
+      logger.info(this.logContext('Searching complaints by DNI', { dni }));
+      
+      const complaints = await this.complaintModel.find({ user: dni }).exec();
+      
+      logger.info(this.logContext('Found complaints by DNI', { 
+        dni, 
+        count: complaints.length 
+      }));
+      
+      return complaints;
+    } catch (error) {
+      logger.error(this.logContext('Error fetching complaints by DNI', {
+        error: error.message,
+        dni,
+        stack: error.stack
+      }));
       throw new NotFoundException(`Error fetching complaints for DNI ${dni}: ${error.message}`);
     }
   }
 
-  // complaints.service.ts
   async create(createComplaintDto: CreateComplaintDto, file: FileUpload): Promise<ComplaintDocument> {
     try {
+      logger.info(this.logContext('Starting complaint creation', { 
+        userId: createComplaintDto.userId,
+        categoryName: createComplaintDto.categoryName
+      }));
+
       const { latitude, longitude, userId, categoryName } = createComplaintDto;
 
-      // Obtener la categoría completa
       const category = await this.categoryService.findByName(categoryName);
-      if (!category) throw new Error(`Category with name ${categoryName} not found`);
+      if (!category) {
+        logger.error(this.logContext('Category not found', { categoryName }));
+        throw new Error(`Category with name ${categoryName} not found`);
+      }
 
-      // Formatear ubicación y obtener detalles
-      const formattedUbication = `(${latitude}, ${longitude})`;
       const locationDetails = await this.geolocationService.getLocationDetails(latitude, longitude);
+      logger.info(this.logContext('Location details retrieved', { 
+        formattedAddress: locationDetails.formattedAddress 
+      }));
 
-      // Subir imagen
       const imageUrl = await this.storageService.uploadFile(file);
+      logger.info(this.logContext('File uploaded successfully', { imageUrl }));
 
-      // Crear la queja con los detalles completos de la categoría
       const complaint = new this.complaintModel({
         title: createComplaintDto.title,
         description: createComplaintDto.description,
-        ubication: formattedUbication,
+        ubication: `(${latitude}, ${longitude})`,
         formattedAddress: locationDetails.formattedAddress,
         street: locationDetails.street,
         streetNumber: locationDetails.streetNumber,
@@ -122,85 +165,186 @@ export class ComplaintsService {
       });
 
       await complaint.save();
+      
+      logger.info(this.logContext('Complaint created successfully', {
+        complaintId: complaint._id,
+        userId
+      }));
+
       return complaint;
     } catch (error) {
+      logger.error(this.logContext('Error creating complaint', {
+        error: error.message,
+        dto: createComplaintDto,
+        stack: error.stack
+      }));
       throw new Error(`Error creating complaint: ${error.message}`);
     }
   }
 
   async update(id: string, updateComplaintDto: UpdateComplaintDto): Promise<ComplaintDocument> {
-    const { latitude, longitude, categoryId, description } = updateComplaintDto;
-    const updateData: any = {};
+    try {
+      logger.info(this.logContext('Starting complaint update', { complaintId: id }));
 
-    if (latitude && longitude) {
-      updateData.ubication = `(${latitude}, ${longitude})`;
+      const { latitude, longitude, categoryId, description } = updateComplaintDto;
+      const updateData: any = {};
 
-      // Actualizar información de ubicación
-      try {
-        const locationDetails = await this.geolocationService.getLocationDetails(latitude.toString(), longitude.toString());
+      if (latitude && longitude) {
+        updateData.ubication = `(${latitude}, ${longitude})`;
+        try {
+          const locationDetails = await this.geolocationService.getLocationDetails(
+            latitude.toString(),
+            longitude.toString()
+          );
 
-        updateData.formattedAddress = locationDetails.formattedAddress;
-        updateData.street = locationDetails.street;
-        updateData.streetNumber = locationDetails.streetNumber;
-        updateData.neighborhood = locationDetails.neighborhood;
-        updateData.district = locationDetails.district._id;
-      } catch (error) {
-        this.logger.error(`Error updating location details: ${error.message}`);
+          updateData.formattedAddress = locationDetails.formattedAddress;
+          updateData.street = locationDetails.street;
+          updateData.streetNumber = locationDetails.streetNumber;
+          updateData.neighborhood = locationDetails.neighborhood;
+          updateData.district = locationDetails.district._id;
+
+          logger.info(this.logContext('Location details updated', { 
+            complaintId: id,
+            newAddress: locationDetails.formattedAddress 
+          }));
+        } catch (error) {
+          logger.error(this.logContext('Error updating location details', {
+            error: error.message,
+            complaintId: id
+          }));
+        }
       }
+
+      if (categoryId) {
+        updateData.category = new Types.ObjectId(categoryId);
+      }
+
+      if (description) {
+        updateData.description = description;
+      }
+
+      const complaint = await this.complaintModel
+        .findByIdAndUpdate(id, updateData, { new: true })
+        .populate('user')
+        .populate('category')
+        .populate('district')
+        .exec();
+
+      if (!complaint) {
+        logger.error(this.logContext('Complaint not found for update', { complaintId: id }));
+        throw new Error(`Complaint with ID ${id} not found`);
+      }
+
+      logger.info(this.logContext('Complaint updated successfully', { complaintId: id }));
+      return complaint;
+    } catch (error) {
+      logger.error(this.logContext('Error updating complaint', {
+        error: error.message,
+        complaintId: id,
+        stack: error.stack
+      }));
+      throw error;
     }
-
-    if (categoryId) {
-      updateData.category = new Types.ObjectId(categoryId);
-    }
-
-    if (description) {
-      updateData.description = description;
-    }
-
-    const complaint = await this.complaintModel.findByIdAndUpdate(id, updateData, { new: true }).populate('user').populate('category').populate('district').exec();
-
-    if (!complaint) {
-      throw new Error(`Complaint with ID ${id} not found`);
-    }
-
-    return complaint;
   }
 
   async findOneComplaint(id: string): Promise<ComplaintDocument> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid complaint ID');
+    try {
+      logger.info(this.logContext('Fetching single complaint', { complaintId: id }));
+
+      if (!Types.ObjectId.isValid(id)) {
+        logger.error(this.logContext('Invalid complaint ID format', { complaintId: id }));
+        throw new Error('Invalid complaint ID');
+      }
+
+      const complaint = await this.complaintModel.findById(id).exec();
+
+      if (!complaint) {
+        logger.error(this.logContext('Complaint not found', { complaintId: id }));
+        throw new Error(`Complaint with ID ${id} not found`);
+      }
+
+      logger.info(this.logContext('Complaint found successfully', { complaintId: id }));
+      return complaint;
+    } catch (error) {
+      logger.error(this.logContext('Error finding complaint', {
+        error: error.message,
+        complaintId: id,
+        stack: error.stack
+      }));
+      throw error;
     }
-
-    const complaint = await this.complaintModel.findById(id).exec();
-
-    if (!complaint) {
-      throw new Error(`Complaint with ID ${id} not found`);
-    }
-
-    return complaint;
   }
 
   async remove(id: string): Promise<void> {
-    if (!Types.ObjectId.isValid(id)) {
-      throw new Error('Invalid complaint ID');
-    }
+    try {
+      logger.info(this.logContext('Attempting to delete complaint', { complaintId: id }));
 
-    const complaint = await this.complaintModel.findById(id).exec();
-    if (!complaint) {
-      throw new Error(`Complaint with ID ${id} not found`);
-    }
+      if (!Types.ObjectId.isValid(id)) {
+        logger.error(this.logContext('Invalid complaint ID format', { complaintId: id }));
+        throw new Error('Invalid complaint ID');
+      }
 
-    await complaint.deleteOne();
+      const complaint = await this.complaintModel.findById(id).exec();
+      if (!complaint) {
+        logger.error(this.logContext('Complaint not found for deletion', { complaintId: id }));
+        throw new Error(`Complaint with ID ${id} not found`);
+      }
+
+      if (complaint.imageUrl) {
+        try {
+          await this.storageService.deleteFile(complaint.imageUrl);
+          logger.info(this.logContext('Associated image deleted', { 
+            complaintId: id,
+            imageUrl: complaint.imageUrl 
+          }));
+        } catch (error) {
+          logger.warn(this.logContext('Error deleting image file', {
+            error: error.message,
+            imageUrl: complaint.imageUrl
+          }));
+        }
+      }
+
+      await complaint.deleteOne();
+      logger.info(this.logContext('Complaint deleted successfully', { complaintId: id }));
+    } catch (error) {
+      logger.error(this.logContext('Error removing complaint', {
+        error: error.message,
+        complaintId: id,
+        stack: error.stack
+      }));
+      throw error;
+    }
   }
 
   async findByName(name: string): Promise<ComplaintDocument> {
-    if (!name) {
-      throw new Error('Invalid complaint name');
+    try {
+      logger.info(this.logContext('Searching complaint by name', { name }));
+
+      if (!name) {
+        logger.error(this.logContext('Invalid complaint name provided'));
+        throw new Error('Invalid complaint name');
+      }
+
+      const complaint = await this.complaintModel.findOne({ name }).exec();
+      if (!complaint) {
+        logger.error(this.logContext('Complaint not found by name', { name }));
+        throw new Error(`Complaint with name ${name} not found`);
+      }
+
+      logger.info(this.logContext('Complaint found by name', { 
+        name,
+        complaintId: complaint._id 
+      }));
+      
+      return complaint;
+    } catch (error) {
+      logger.error(this.logContext('Error finding complaint by name', {
+        error: error.message,
+        name,
+        stack: error.stack
+      }));
+      throw error;
     }
-
-    const complaint = await this.complaintModel.findOne({ name }).exec();
-    if (!complaint) throw new Error(`Complaint with name ${name} not found`);
-
-    return complaint;
   }
 }

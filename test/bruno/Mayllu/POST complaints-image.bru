@@ -1,0 +1,21 @@
+meta {
+  name: POST complaints-image
+  type: http
+  seq: 5
+}
+
+post {
+  url: 127.0.0.1:3000/api/complaints
+  body: multipartForm
+  auth: none
+}
+
+body:multipart-form {
+  photo: @file(/Users/kaloslazo/Documents/nutria.jpg)
+  title: Nutria en peligro
+  description: Descripcion de ejemplo
+  userId: 12345678
+  categoryName: Residuos
+  latitude: 12.345
+  longitude: 12.345
+}
