@@ -1,7 +1,7 @@
 // storage.service.ts
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { logger, createLogContext } from '../logging/winston.config';
+import { businessLogger as logger, createLogContext } from '../logging';
 const B2 = require('backblaze-b2');
 
 interface FileUpload {

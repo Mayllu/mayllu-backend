@@ -5,6 +5,9 @@ import { AuthModule } from './auth/auth.module';
 import { ComplaintsModule } from './complaints/complaints.module';
 import { UsersModule } from './users/users.module';
 import { LeaderboardModule } from './leaderboard/leaderboard.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { LoggingInterceptor } from './logging';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -20,6 +23,13 @@ import { LeaderboardModule } from './leaderboard/leaderboard.module';
     ComplaintsModule,
     UsersModule,
     LeaderboardModule,
+    AuditModule,
+  ],
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: LoggingInterceptor,
+    },
   ],
 })
-export class AppModule { }
+export class AppModule {}

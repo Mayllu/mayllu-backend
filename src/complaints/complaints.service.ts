@@ -10,7 +10,7 @@ import { UpdateComplaintDto } from './dto/update-complaint.dto';
 import { GeolocationService } from './geolocation.service';
 import { ComplaintCategoryService } from './complaint-category.service';
 import { StorageService } from './storage.service';
-import { logger, createLogContext } from '../logging/winston.config';
+import { businessLogger as logger, createLogContext } from '../logging';
 
 interface FileUpload {
   fieldname: string;

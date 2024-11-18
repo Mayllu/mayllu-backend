@@ -18,12 +18,14 @@ import { memoryStorage } from 'multer';
 import { StorageService } from './storage.service';
 import { ConfigModule } from '@nestjs/config';
 import { WinstonModule } from 'nest-winston';
-import { winstonConfig } from '../logging/winston.config';
+import { businessLogger, performanceLogger } from '../logging';
 
 @Module({
   imports: [
     ConfigModule,
-    WinstonModule.forRoot(winstonConfig),
+    WinstonModule.forRoot({
+      transports: [...businessLogger.transports, ...performanceLogger.transports],
+    }),
     MulterModule.register({
       storage: memoryStorage(),
       limits: {
@@ -40,12 +42,6 @@ import { winstonConfig } from '../logging/winston.config';
     ]),
   ],
   controllers: [ComplaintsController, ComplaintCategoryController],
-  providers: [
-    ComplaintsService,
-    ComplaintStateService,
-    StorageService,
-    GeolocationService,
-    ComplaintCategoryService,
-  ],
+  providers: [ComplaintsService, ComplaintStateService, StorageService, GeolocationService, ComplaintCategoryService],
 })
 export class ComplaintsModule {}
